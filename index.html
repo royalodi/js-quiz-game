@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dev Quiz — Interactive Tech Trivia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0f1117;--surface:#1a1d2e;--surface2:#252840;
+      --border:#2d3148;--text:#e4e6f1;--muted:#7b7f9a;
+      --primary:#6366f1;--success:#10b981;--danger:#ef4444;--warn:#f59e0b;
+      --radius:14px;
+    }
+    body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .container{width:100%;max-width:640px}
+
+    /* SCREENS */
+    .screen{display:none;animation:fadeIn 0.4s ease}
+    .screen.active{display:block}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeSlide{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+
+    /* START SCREEN */
+    .start-header{text-align:center;margin-bottom:36px}
+    .app-logo{width:72px;height:72px;background:linear-gradient(135deg,var(--primary),#818cf8);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px}
+    .start-header h1{font-size:36px;font-weight:800;margin-bottom:8px}
+    .start-header p{color:var(--muted);font-size:16px}
+
+    .categories{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px}
+    .cat-btn{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:20px 16px;cursor:pointer;color:var(--text);font-family:inherit;transition:all 0.2s;text-align:left}
+    .cat-btn:hover{border-color:var(--primary);transform:translateY(-2px)}
+    .cat-btn.active{border-color:var(--primary);background:rgba(99,102,241,0.12)}
+    .cat-icon{font-size:28px;margin-bottom:8px;display:block}
+    .cat-name{font-size:16px;font-weight:700;display:block;margin-bottom:2px}
+    .cat-count{font-size:13px;color:var(--muted);display:block}
+    .hs-display{font-size:12px;color:var(--primary);margin-top:4px;display:block}
+
+    /* QUIZ SCREEN */
+    .quiz-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .category-label{font-size:13px;font-weight:600;color:var(--primary);background:rgba(99,102,241,0.15);padding:4px 12px;border-radius:20px}
+    .progress-info{display:flex;align-items:center;gap:12px}
+    #progress-text{font-size:14px;color:var(--muted);font-weight:600}
+
+    /* Timer Ring */
+    .timer-wrap{position:relative;width:54px;height:54px}
+    #timer-ring{width:54px;height:54px;border-radius:50%;background:conic-gradient(var(--success) 100%,var(--surface2) 100%);display:flex;align-items:center;justify-content:center;transition:background 0.5s}
+    #timer-ring::before{content:'';position:absolute;width:42px;height:42px;background:var(--surface);border-radius:50%}
+    #timer{position:absolute;font-size:16px;font-weight:700;z-index:1}
+
+    .progress-bar-wrap{height:6px;background:var(--surface2);border-radius:99px;margin-bottom:28px;overflow:hidden}
+    #progress-bar{height:100%;background:linear-gradient(90deg,var(--primary),#818cf8);border-radius:99px;width:0;transition:width 0.5s ease}
+
+    #question-text{font-size:20px;font-weight:600;line-height:1.5;margin-bottom:24px;min-height:60px}
+
+    .options-grid{display:grid;gap:10px;margin-bottom:24px}
+    .option-btn{
+      background:var(--surface);border:2px solid var(--border);color:var(--text);
+      border-radius:var(--radius);padding:14px 18px;font-family:inherit;font-size:15px;
+      cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;
+      transition:all 0.2s;opacity:0;transform:translateX(-12px);
+    }
+    .option-btn.visible{opacity:1;transform:translateX(0)}
+    .option-btn:not(:disabled):hover{border-color:var(--primary);background:rgba(99,102,241,0.1)}
+    .option-btn.correct{border-color:var(--success);background:rgba(16,185,129,0.15);color:var(--success)}
+    .option-btn.wrong{border-color:var(--danger);background:rgba(239,68,68,0.12);color:var(--danger)}
+    .opt-letter{width:30px;height:30px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+
+    /* RESULT SCREEN */
+    .result-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px;text-align:center}
+    .score-circle{width:120px;height:120px;background:linear-gradient(135deg,var(--primary),#818cf8);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 24px}
+    #final-score{font-size:42px;font-weight:800;line-height:1}
+    .score-divider{font-size:14px;color:rgba(255,255,255,0.7)}
+    #final-total{font-size:18px;font-weight:600}
+    #final-percent{font-size:32px;font-weight:700;margin-bottom:8px}
+    #final-msg{color:var(--muted);font-size:16px;margin-bottom:20px}
+    #high-score{font-size:14px;color:var(--warn);margin-bottom:28px;font-weight:600}
+    #high-score.new-hs{color:var(--success);animation:pulse 1s ease 3}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+    .answers-review{text-align:left;border-top:1px solid var(--border);padding-top:20px;margin-top:8px;max-height:260px;overflow-y:auto}
+    .answers-review h3{font-size:14px;color:var(--muted);margin-bottom:12px;font-weight:600}
+    .review-item{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border)}
+    .review-item:last-child{border-bottom:none}
+    .review-num{width:28px;height:28px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+    .review-q{font-size:14px;line-height:1.4;grid-column:2}
+    .correct-ans{font-size:13px;color:var(--success);grid-column:2;margin-top:2px}
+
+    /* Shared Buttons */
+    .btn{width:100%;padding:14px;border-radius:10px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;border:none;transition:all 0.2s;margin-top:8px}
+    .btn-primary{background:linear-gradient(135deg,var(--primary),#818cf8);color:#fff}
+    .btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 24px rgba(99,102,241,0.35)}
+    .btn-primary:disabled{opacity:0.4;cursor:not-allowed}
+    .btn-outline{background:transparent;border:2px solid var(--border);color:var(--text)}
+    .btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+    .btn.pulse{animation:pulse 0.6s ease}
+    .hidden{display:none!important}
+
+    .result-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+    .result-btns .btn{margin-top:0}
+
+    @media(max-width:480px){.categories{grid-template-columns:1fr}.result-btns{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- START SCREEN -->
+  <div id="screen-start" class="screen active">
+    <div class="start-header">
+      <div class="app-logo">🧠</div>
+      <h1>Dev Quiz</h1>
+      <p>Test your coding knowledge — 10 random questions, 25 seconds each</p>
+    </div>
+
+    <div class="categories">
+      <button class="cat-btn" data-cat="html">
+        <span class="cat-icon">🌐</span>
+        <span class="cat-name">HTML</span>
+        <span class="cat-count">10 questions</span>
+        <span class="hs-display" data-cat="html"></span>
+      </button>
+      <button class="cat-btn" data-cat="css">
+        <span class="cat-icon">🎨</span>
+        <span class="cat-name">CSS</span>
+        <span class="cat-count">10 questions</span>
+        <span class="hs-display" data-cat="css"></span>
+      </button>
+      <button class="cat-btn" data-cat="javascript">
+        <span class="cat-icon">⚡</span>
+        <span class="cat-name">JavaScript</span>
+        <span class="cat-count">10 questions</span>
+        <span class="hs-display" data-cat="javascript"></span>
+      </button>
+      <button class="cat-btn" data-cat="python">
+        <span class="cat-icon">🐍</span>
+        <span class="cat-name">Python</span>
+        <span class="cat-count">10 questions</span>
+        <span class="hs-display" data-cat="python"></span>
+      </button>
+    </div>
+
+    <button id="btn-start" class="btn btn-primary" disabled>Start Quiz →</button>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div id="screen-quiz" class="screen">
+    <div class="quiz-header">
+      <span id="category-label" class="category-label">HTML</span>
+      <div class="progress-info">
+        <span id="progress-text">1 / 10</span>
+        <div class="timer-wrap">
+          <div id="timer-ring">
+            <span id="timer">25</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div id="progress-bar"></div>
+    </div>
+
+    <p id="question-text">Question text here…</p>
+
+    <div id="options-grid" class="options-grid"></div>
+
+    <button id="btn-next" class="btn btn-primary hidden">Next Question →</button>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="screen-result" class="screen">
+    <div class="result-card">
+      <div class="score-circle">
+        <span id="final-score">0</span>
+        <span class="score-divider">out of</span>
+        <span id="final-total">10</span>
+      </div>
+      <div id="final-percent">0%</div>
+      <div id="final-msg">Well done!</div>
+      <div id="high-score"></div>
+
+      <div class="answers-review" id="answers-review">
+        <h3>CORRECT ANSWERS</h3>
+      </div>
+
+      <div class="result-btns">
+        <button id="btn-restart" class="btn btn-primary">🔁 Play Again</button>
+        <button id="btn-home" class="btn btn-outline">🏠 Home</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="questions.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
